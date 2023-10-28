@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BassieLight</title>
+    <script src="vue.min.js"></script>
+    <script src="config.js"></script>
+    <style>
+        body,
+        button {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            font-size: 16px;
+            line-height: 1.5;
+        }
+
+        body {
+            margin: 16px;
+            background-color: #000;
+            color: #fff;
+        }
+
+        button {
+            margin: 4px;
+            padding: 24px 64px;
+            background-color: #888;
+            color: #fff;
+        }
+
+        button.active {
+            background-color: #fff;
+            color: #111;
+        }
+
+        hr {
+            border-bottom: 1px dashed #fff;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app">
+        <h1>BassieLight</h1>
+
+        <p>
+            <button :class="{ active: mode == 'automatic' }" @click="automatic()">Automatic</button>
+            <button :class="{ active: mode == 'manual' }" @click="manual()">Manual</button>
+        </p>
+
+        <hr>
+
+        <template v-if="mode == 'automatic'">
+            <p>Lamps are on automatic mode</p>
+        </template>
+
+        <template v-if="mode == 'manual'">
+            <h3>Selected group</h3>
+            <p>
+                <button v-for="group in groups" :class="{ active: group == currentGroup }"
+                    @click="currentGroup = group">
+                    {{ group.name }}
+                </button>
+            </p>
+
+            <hr>
+
+            <h3>Color</h3>
+            <p>
+                <button @click="rgb(0, 0, 0)" style="background-color: #000;">Off</button>
+                <button @click="rgb(255, 0, 0)" style="background-color: #f00;">Red</button>
+                <button @click="rgb(255, 255, 0)" style="background-color: #ff0; color: #111;">Yellow</button>
+                <button @click="rgb(255, 128, 0)" style="background-color: #f80;">Orange</button>
+                <button @click="rgb(0, 255, 0)" style="background-color: #0f0; color: #111;">Green</button>
+                <button @click="rgb(0, 0, 255)" style="background-color: #00f;">Blue</button>
+                <button @click="rgb(0, 255, 255)" style="background-color: #0ff; color: #111;">Cyan</button>
+                <button @click="rgb(255, 0, 255)" style="background-color: #f0f;">Pink</button>
+                <button @click="rgb(255, 255, 255)" style="background-color: #fff; color: #111;">White</button>
+            </p>
+
+            <h3>Strobe</h3>
+            <p>
+                <button @click="strobe(0)">No strobe</button>
+                <button @click="strobe(64)">Strobe 25%</button>
+                <button @click="strobe(128)">Strobe 50%</button>
+                <button @click="strobe(192)">Strobe 75%</button>
+                <button @click="strobe(255)">Strobe 100%</button>
+            </p>
+        </template>
+    </div>
+
+    <script>
+        const dmx = new Uint8Array(512);
+        function setChannel(addr, value) { dmx[addr - 1] = value; }
+
+        const ws = new WebSocket('ws://localhost:8080/');
+        ws.binaryType = "arraybuffer";
+        function send() { ws.send(dmx); }
+
+        const app = new Vue({
+            el: '#app',
+            data: {
+                mode: 'automatic',
+                currentGroup: groups[0],
+                groups
+            },
+            methods: {
+                automatic() {
+                    this.mode = 'automatic';
+                    this.currentGroup = groups[0];
+
+                    for (const deviceName of this.currentGroup.devices) {
+                        const device = devices.find(device => device.name == deviceName);
+                        if (device.type == 'p56led')
+                            setChannel(device.addr + 5, 192); // 7 color cycle mode
+                    }
+                    send();
+                },
+
+                manual() {
+                    this.mode = 'manual';
+                    this.currentGroup = groups[0];
+
+                    for (const deviceName of this.currentGroup.devices) {
+                        const device = devices.find(device => device.name == deviceName);
+                        if (device.type == 'p56led')
+                            setChannel(device.addr + 5, 0);
+                    }
+                    send();
+                },
+
+                rgb(r, g, b) {
+                    for (const deviceName of this.currentGroup.devices) {
+                        const device = devices.find(device => device.name == deviceName);
+                        if (device.type == 'p56led') {
+                            setChannel(device.addr + 0, r);
+                            setChannel(device.addr + 1, g);
+                            setChannel(device.addr + 2, b);
+                        }
+                    }
+                    send();
+                },
+
+                strobe(amount) {
+                    for (const deviceName of this.currentGroup.devices) {
+                        const device = devices.find(device => device.name == deviceName);
+                        if (device.type == 'p56led')
+                            setChannel(device.addr + 4, amount);
+                    }
+                    send();
+                }
+            }
+        });
+        ws.onopen = () => app.automatic();
+    </script>
+</body>
+
+</html>
