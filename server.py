@@ -19,8 +19,7 @@ dmx = [0] * 512
 def sendDMXSignal():
     while True:
         ftdi.set_line_property(8, 2, 'N', True)
-        ftdi.set_line_property(8, 2, 'N', None)
-        ftdi.write_data([0])
+        ftdi.set_line_property(8, 2, 'N', False)
         ftdi.write_data(dmx)
         time.sleep(0.0224)
 

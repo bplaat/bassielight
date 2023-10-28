@@ -5,8 +5,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BassieLight</title>
+    <link rel="icon" href="data:,">
     <script src="vue.min.js"></script>
-    <script src="config.js"></script>
     <style>
         body,
         button {
@@ -23,18 +23,23 @@
 
         button {
             margin: 4px;
-            padding: 24px 64px;
+            padding: 24px 32px;
             background-color: #888;
             color: #fff;
+            opacity: 0.5;
         }
 
         button.active {
-            background-color: #fff;
-            color: #111;
+            opacity: 1;
+        }
+
+        .disabled {
+            opacity: 0.5;
+            pointer-events: none;
         }
 
         hr {
-            border-bottom: 1px dashed #fff;
+            border-bottom: 2px dashed #fff;
         }
     </style>
 </head>
@@ -57,101 +62,236 @@
         <template v-if="mode == 'manual'">
             <h3>Selected group</h3>
             <p>
-                <button v-for="group in groups" :class="{ active: group == currentGroup }"
-                    @click="currentGroup = group">
+                <button v-for="group in groups" :class="{ active: group == current }" @click="current = group">
                     {{ group.name }}
                 </button>
             </p>
 
             <hr>
 
-            <h3>Color</h3>
+            <h3>Main Color</h3>
             <p>
-                <button @click="rgb(0, 0, 0)" style="background-color: #000;">Off</button>
-                <button @click="rgb(255, 0, 0)" style="background-color: #f00;">Red</button>
-                <button @click="rgb(255, 255, 0)" style="background-color: #ff0; color: #111;">Yellow</button>
-                <button @click="rgb(255, 128, 0)" style="background-color: #f80;">Orange</button>
-                <button @click="rgb(0, 255, 0)" style="background-color: #0f0; color: #111;">Green</button>
-                <button @click="rgb(0, 0, 255)" style="background-color: #00f;">Blue</button>
-                <button @click="rgb(0, 255, 255)" style="background-color: #0ff; color: #111;">Cyan</button>
-                <button @click="rgb(255, 0, 255)" style="background-color: #f0f;">Pink</button>
-                <button @click="rgb(255, 255, 255)" style="background-color: #fff; color: #111;">White</button>
+                <button v-for="color in colors"
+                    :class="{ active: current.mainRed == color.red && current.mainGreen == color.green && current.mainBlue == color.blue }"
+                    @click="current.mainColor(color.red, color.green, color.blue)"
+                    :style=" { backgroundColor: `rgb(${color.red}, ${color.green}, ${color.blue})`, color: isWhiteReadable(color.red, color.green, color.blue) ? '#fff' : '#000' }">{{
+                    color.name }}</button>
+            </p>
+
+            <h3>Toggle Color</h3>
+            <p>
+                <button v-for="color in colors"
+                    :class="{ active: current.toggleRed == color.red && current.toggleGreen == color.green && current.toggleBlue == color.blue }"
+                    @click="current.toggleColor(color.red, color.green, color.blue)"
+                    :style=" { backgroundColor: `rgb(${color.red}, ${color.green}, ${color.blue})`, color: isWhiteReadable(color.red, color.green, color.blue) ? '#fff' : '#000' }">{{
+                    color.name }}</button>
+            </p>
+
+            <h3>Toggle Speed</h3>
+            <p :class="{ 'disabled': current.toggleRed == 0 && current.toggleGreen == 0 && current.toggleBlue == 0 }">
+                <button :class="{ active: current.toggleSpeed == 50 }" @click="current.toggleSpeed = 50">
+                    Toggle 50 ms</button>
+                <button :class="{ active: current.toggleSpeed == 100 }" @click="current.toggleSpeed = 100">
+                    Toggle 100 ms</button>
+                <button :class="{ active: current.toggleSpeed == 250 }" @click="current.toggleSpeed = 250">
+                    Toggle 250 ms</button>
+                <button :class="{ active: current.toggleSpeed == 500 }" @click="current.toggleSpeed = 500">
+                    Toggle 500 ms</button>
+                <button :class="{ active: current.toggleSpeed == 1000 }" @click="current.toggleSpeed = 1000">
+                    Toggle 1000 ms</button>
             </p>
 
             <h3>Strobe</h3>
             <p>
-                <button @click="strobe(0)">No strobe</button>
-                <button @click="strobe(64)">Strobe 25%</button>
-                <button @click="strobe(128)">Strobe 50%</button>
-                <button @click="strobe(192)">Strobe 75%</button>
-                <button @click="strobe(255)">Strobe 100%</button>
+                <button :class="{ active: current.strobe == 0 }" @click="current.strobe = 0">No strobe</button>
+                <button :class="{ active: current.strobe == 64 }" @click="current.strobe = 64">Strobe 25%</button>
+                <button :class="{ active: current.strobe == 128 }" @click="current.strobe = 128">Strobe 50%</button>
+                <button :class="{ active: current.strobe == 192 }" @click="current.strobe = 192">Strobe 75%</button>
+                <button :class="{ active: current.strobe == 255 }" @click="current.strobe = 255">Strobe 100%</button>
             </p>
         </template>
     </div>
 
-    <script>
-        const dmx = new Uint8Array(512);
-        function setChannel(addr, value) { dmx[addr - 1] = value; }
+    <script type="module">
+        const config = await(await fetch('./config.json')).json();
 
+        const dmx = new Uint8Array(512);
+        let dirty = false;
         const ws = new WebSocket('ws://localhost:8080/');
         ws.binaryType = "arraybuffer";
-        function send() { ws.send(dmx); }
+
+        const colors = [
+            { name: 'Off', red: 0, green: 0, blue: 0 },
+            { name: 'Red', red: 255, green: 0, blue: 0 },
+            { name: 'Yellow', red: 255, green: 255, blue: 0 },
+            { name: 'Orange', red: 255, green: 128, blue: 0 },
+            { name: 'Green', red: 0, green: 255, blue: 0 },
+            { name: 'Blue', red: 0, green: 0, blue: 255 },
+            { name: 'Cyan', red: 0, green: 255, blue: 255 },
+            { name: 'Pink', red: 255, green: 0, blue: 255 },
+            { name: 'White', red: 255, green: 255, blue: 255 },
+        ];
+
+        class P56LED {
+            constructor(addr) {
+                this.addr = addr;
+
+                this.mainRed = 0;
+                this.mainGreen = 0;
+                this.mainBlue = 0;
+
+                this.toggleRed = 0;
+                this.toggleGreen = 0;
+                this.toggleBlue = 0;
+                this.toggleTime = Date.now();
+                this.toggleSpeed = 500;
+            }
+
+            get red() { return dmx[this.addr + 0]; }
+            set red(value) { if (!dirty) dirty = dmx[this.addr + 0] != value; dmx[this.addr + 0] = value; }
+            get green() { return dmx[this.addr + 1]; }
+            set green(value) { if (!dirty) dirty = dmx[this.addr + 1] != value; dmx[this.addr + 1] = value; }
+            get blue() { return dmx[this.addr + 2]; }
+            set blue(value) { if (!dirty) dirty = dmx[this.addr + 2] != value; dmx[this.addr + 2] = value; }
+
+            get strobe() { return dmx[this.addr + 4]; }
+            set strobe(value) { if (!dirty) dirty = dmx[this.addr + 4] != value; dmx[this.addr + 4] = value; }
+
+            get automatic() { return dmx[this.addr + 5] != 0; }
+            set automatic(value) {
+                dirty = true;
+                dmx[this.addr + 5] = value ? (Math.random() > 0.5 ? 255 : 192) : 0;
+            }
+
+            tick() {
+                if (this.toggleRed != 0 || this.toggleGreen != 0 || this.toggleBlue != 0) {
+                    if (Date.now() - this.toggleTime >= this.toggleSpeed) {
+                        this.toggleTime = Date.now();
+                        if (this.red == this.mainRed && this.green == this.mainGreen && this.blue == this.mainBlue) {
+                            this.red = this.toggleRed;
+                            this.green = this.toggleGreen;
+                            this.blue = this.toggleBlue;
+                        } else {
+                            this.red = this.mainRed;
+                            this.green = this.mainGreen;
+                            this.blue = this.mainBlue;
+                        }
+                    }
+                } else {
+                    this.red = this.mainRed;
+                    this.green = this.mainGreen;
+                    this.blue = this.mainBlue;
+                }
+            }
+        }
+
+        const devices = {};
+        for (const device of config.devices) {
+            if (device.type == 'p56led')
+                devices[device.name] = new P56LED(device.addr);
+        }
+
+        class Group {
+            constructor(name, devicesNames) {
+                this.name = name;
+                this.devicesNames = devicesNames;
+            }
+
+            get mainRed() { return devices[this.devicesNames[0]].mainRed; }
+            get mainGreen() { return devices[this.devicesNames[0]].mainGreen; }
+            get mainBlue() { return devices[this.devicesNames[0]].mainBlue; }
+            mainColor(red, green, blue) {
+                for (const deviceName of this.devicesNames) {
+                    devices[deviceName].mainRed = red;
+                    devices[deviceName].mainGreen = green;
+                    devices[deviceName].mainBlue = blue;
+                }
+                app.$forceUpdate();
+            }
+
+            get toggleRed() { return devices[this.devicesNames[0]].toggleRed; }
+            get toggleGreen() { return devices[this.devicesNames[0]].toggleGreen; }
+            get toggleBlue() { return devices[this.devicesNames[0]].toggleBlue; }
+            toggleColor(red, green, blue) {
+                for (const deviceName of this.devicesNames) {
+                    devices[deviceName].toggleRed = red;
+                    devices[deviceName].toggleGreen = green;
+                    devices[deviceName].toggleBlue = blue;
+                }
+                app.$forceUpdate();
+            }
+
+            get toggleSpeed() { return devices[this.devicesNames[0]].toggleSpeed; }
+            set toggleSpeed(value) {
+                for (const deviceName of this.devicesNames)
+                    devices[deviceName].toggleSpeed = value;
+                app.$forceUpdate();
+            }
+
+            get strobe() { return devices[this.devicesNames[0]].strobe; }
+            set strobe(value) {
+                for (const deviceName of this.devicesNames)
+                    devices[deviceName].strobe = value;
+                app.$forceUpdate();
+            }
+
+            get automatic() { return devices[this.devicesNames[0]].automatic; }
+            set automatic(value) {
+                for (const deviceName of this.devicesNames)
+                    devices[deviceName].automatic = value;
+                app.$forceUpdate();
+            }
+        }
+
+        const groups = [];
+        for (const group of config.groups) {
+            groups.push(new Group(group.name, group.devices));
+        }
+
+        function sendLoop() {
+            window.requestAnimationFrame(sendLoop);
+
+            for (const device of Object.values(devices))
+                device.tick();
+
+            if (dirty) {
+                dirty = false;
+                ws.send(dmx);
+            }
+        }
 
         const app = new Vue({
             el: '#app',
             data: {
                 mode: 'automatic',
-                currentGroup: groups[0],
-                groups
+                colors,
+                devices,
+                groups,
+                current: groups[0]
             },
             methods: {
+                isWhiteReadable(r, g, b) {
+                    return 0.2126 * (r / 255) + 0.7152 * (g / 255) + 0.0722 * (b / 255) < 0.5;
+                },
+
                 automatic() {
                     this.mode = 'automatic';
-                    this.currentGroup = groups[0];
-
-                    for (const deviceName of this.currentGroup.devices) {
-                        const device = devices.find(device => device.name == deviceName);
-                        if (device.type == 'p56led')
-                            setChannel(device.addr + 5, 192); // 7 color cycle mode
-                    }
-                    send();
+                    this.current = this.groups[0];
+                    this.current.automatic = true;
                 },
 
                 manual() {
                     this.mode = 'manual';
-                    this.currentGroup = groups[0];
-
-                    for (const deviceName of this.currentGroup.devices) {
-                        const device = devices.find(device => device.name == deviceName);
-                        if (device.type == 'p56led')
-                            setChannel(device.addr + 5, 0);
-                    }
-                    send();
-                },
-
-                rgb(r, g, b) {
-                    for (const deviceName of this.currentGroup.devices) {
-                        const device = devices.find(device => device.name == deviceName);
-                        if (device.type == 'p56led') {
-                            setChannel(device.addr + 0, r);
-                            setChannel(device.addr + 1, g);
-                            setChannel(device.addr + 2, b);
-                        }
-                    }
-                    send();
-                },
-
-                strobe(amount) {
-                    for (const deviceName of this.currentGroup.devices) {
-                        const device = devices.find(device => device.name == deviceName);
-                        if (device.type == 'p56led')
-                            setChannel(device.addr + 4, amount);
-                    }
-                    send();
+                    this.current = this.groups[0];
+                    this.current.automatic = false;
                 }
             }
         });
-        ws.onopen = () => app.automatic();
+
+        ws.onopen = () => {
+            app.automatic();
+            sendLoop();
+        };
     </script>
 </body>
 
