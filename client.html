@@ -57,7 +57,7 @@
 
 <body>
     <div id="app">
-        <h1>BassieLight v0.1 ~ Mady by <a href="https://bplaat.nl">Bastiaan van der Plaat</a></h1>
+        <h1>BassieLight v0.1 ~ Mady by <a href="https://bplaat.nl" target="_blank">Bastiaan van der Plaat</a></h1>
 
         <p>
             <button :class="{ active: mode == 'automatic' }" @click="automatic()">Automatic</button>
@@ -91,7 +91,7 @@
             </p>
 
             <h3>Toggle Color</h3>
-            <p>
+            <p :class="{ 'disabled': current.mainRed == 0 && current.mainGreen == 0 && current.mainBlue == 0 }">
                 <button v-for="color in colors"
                     :class="{ active: current.toggleRed == color.red && current.toggleGreen == color.green && current.toggleBlue == color.blue }"
                     @click="current.toggleColor(color.red, color.green, color.blue)"
@@ -144,7 +144,7 @@
                 <button :class="{ active: current.strobe == 128 }" @click="current.strobe = 128">Strobe 50%</button>
                 <button :class="{ active: current.strobe == 192 }" @click="current.strobe = 192">Strobe 75%</button>
                 <button :class="{ active: current.strobe == 223 }" @click="current.strobe = 223">Strobe 95%</button>
-                <button :class="{ active: current.strobe == 242 }" @click="current.strobe = 255">Strobe 100%</button>
+                <button :class="{ active: current.strobe == 255 }" @click="current.strobe = 255">Strobe 100%</button>
             </p>
         </template>
 
@@ -209,7 +209,10 @@
             }
 
             tick() {
-                if (this.toggleRed != 0 || this.toggleGreen != 0 || this.toggleBlue != 0) {
+                if (
+                    (this.mainRed != 0 || this.mainGreen != 0 || this.mainBlue != 0) &&
+                    (this.toggleRed != 0 || this.toggleGreen != 0 || this.toggleBlue != 0)
+                ) {
                     if (Date.now() - this.toggleTime >= this.toggleSpeed) {
                         this.toggleTime = Date.now();
                         this.isToggleColor = !this.isToggleColor;
@@ -302,8 +305,6 @@
         }
 
         function sendLoop() {
-            window.requestAnimationFrame(sendLoop);
-
             if (app.mode != 'off') {
                 for (const device of Object.values(devices))
                     device.tick();
@@ -351,6 +352,7 @@
         ws.onopen = () => {
             app.automatic();
             sendLoop();
+            setInterval(sendLoop, 50);
         };
     </script>
 </body>
