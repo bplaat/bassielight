@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BassieLight</title>
+    <title>BassieLight v0.1</title>
     <link rel="icon" href="data:,">
     <script src="vue.min.js"></script>
     <style>
@@ -19,6 +19,17 @@
             margin: 16px;
             background-color: #000;
             color: #fff;
+        }
+
+        a {
+            color: inherit;
+            text-decoration: none;
+        }
+
+        a:hover,
+        a:focus {
+            text-decoration: underline;
+
         }
 
         button {
@@ -46,17 +57,18 @@
 
 <body>
     <div id="app">
-        <h1>BassieLight</h1>
+        <h1>BassieLight v0.1 ~ Mady by <a href="https://bplaat.nl">Bastiaan van der Plaat</a></h1>
 
         <p>
             <button :class="{ active: mode == 'automatic' }" @click="automatic()">Automatic</button>
             <button :class="{ active: mode == 'manual' }" @click="manual()">Manual</button>
+            <button :class="{ active: mode == 'off' }" @click="off()">Everything off</button>
         </p>
 
         <hr>
 
         <template v-if="mode == 'automatic'">
-            <p>Lamps are on automatic mode</p>
+            <p>All lamps are on automatic mode</p>
         </template>
 
         <template v-if="mode == 'manual'">
@@ -87,6 +99,28 @@
                     color.name }}</button>
             </p>
 
+            <h3>Intensity</h3>
+            <p>
+                <button :class="{ active: current.intensity == 0.05 }" @click="current.intensity = 0.05"
+                    style="background-color: rgba(255, 255, 0, 0.05);">
+                    Intensity 5%</button>
+                <button :class="{ active: current.intensity == 0.1 }" @click="current.intensity = 0.1"
+                    style="background-color: rgba(255, 255, 0, 0.1);">
+                    Intensity 10%</button>
+                <button :class="{ active: current.intensity == 0.25 }" @click="current.intensity = 0.25"
+                    style="background-color: rgba(255, 255, 0, 0.25 );">
+                    Intensity 25%</button>
+                <button :class="{ active: current.intensity == 0.5 }" @click="current.intensity = 0.5"
+                    style="background-color: rgba(255, 255, 0, 0.5);">
+                    Intensity 50%</button>
+                <button :class="{ active: current.intensity == 0.75 }" @click="current.intensity = 0.75"
+                    style="background-color: rgba(255, 255, 0, 0.75); color: #000;">
+                    Intensity 75%</button>
+                <button :class="{ active: current.intensity == 1 }" @click="current.intensity = 1"
+                    style="background-color: rgba(255, 255, 0, 1); color: #000;">
+                    Intensity 100%</button>
+            </p>
+
             <h3>Toggle Speed</h3>
             <p :class="{ 'disabled': current.toggleRed == 0 && current.toggleGreen == 0 && current.toggleBlue == 0 }">
                 <button :class="{ active: current.toggleSpeed == 50 }" @click="current.toggleSpeed = 50">
@@ -98,7 +132,9 @@
                 <button :class="{ active: current.toggleSpeed == 500 }" @click="current.toggleSpeed = 500">
                     Toggle 500 ms</button>
                 <button :class="{ active: current.toggleSpeed == 1000 }" @click="current.toggleSpeed = 1000">
-                    Toggle 1000 ms</button>
+                    Toggle 1 s</button>
+                <button :class="{ active: current.toggleSpeed == 2000 }" @click="current.toggleSpeed = 2000">
+                    Toggle 2 s</button>
             </p>
 
             <h3>Strobe</h3>
@@ -107,8 +143,13 @@
                 <button :class="{ active: current.strobe == 64 }" @click="current.strobe = 64">Strobe 25%</button>
                 <button :class="{ active: current.strobe == 128 }" @click="current.strobe = 128">Strobe 50%</button>
                 <button :class="{ active: current.strobe == 192 }" @click="current.strobe = 192">Strobe 75%</button>
-                <button :class="{ active: current.strobe == 255 }" @click="current.strobe = 255">Strobe 100%</button>
+                <button :class="{ active: current.strobe == 223 }" @click="current.strobe = 223">Strobe 95%</button>
+                <button :class="{ active: current.strobe == 242 }" @click="current.strobe = 255">Strobe 100%</button>
             </p>
+        </template>
+
+        <template v-if="mode == 'off'">
+            <p>All lamps are off</p>
         </template>
     </div>
 
@@ -143,8 +184,12 @@
                 this.toggleRed = 0;
                 this.toggleGreen = 0;
                 this.toggleBlue = 0;
+
+                this.intensity = 1;
+
                 this.toggleTime = Date.now();
                 this.toggleSpeed = 500;
+                this.isToggleColor = false;
             }
 
             get red() { return dmx[this.addr + 0]; }
@@ -167,20 +212,21 @@
                 if (this.toggleRed != 0 || this.toggleGreen != 0 || this.toggleBlue != 0) {
                     if (Date.now() - this.toggleTime >= this.toggleSpeed) {
                         this.toggleTime = Date.now();
-                        if (this.red == this.mainRed && this.green == this.mainGreen && this.blue == this.mainBlue) {
-                            this.red = this.toggleRed;
-                            this.green = this.toggleGreen;
-                            this.blue = this.toggleBlue;
+                        this.isToggleColor = !this.isToggleColor;
+                        if (this.isToggleColor) {
+                            this.red = Math.floor(this.toggleRed * this.intensity);
+                            this.green = Math.floor(this.toggleGreen * this.intensity);
+                            this.blue = Math.floor(this.toggleBlue * this.intensity);
                         } else {
-                            this.red = this.mainRed;
-                            this.green = this.mainGreen;
-                            this.blue = this.mainBlue;
+                            this.red = Math.floor(this.mainRed * this.intensity);
+                            this.green = Math.floor(this.mainGreen * this.intensity);
+                            this.blue = Math.floor(this.mainBlue * this.intensity);
                         }
                     }
                 } else {
-                    this.red = this.mainRed;
-                    this.green = this.mainGreen;
-                    this.blue = this.mainBlue;
+                    this.red = Math.floor(this.mainRed * this.intensity);
+                    this.green = Math.floor(this.mainGreen * this.intensity);
+                    this.blue = Math.floor(this.mainBlue * this.intensity);
                 }
             }
         }
@@ -221,6 +267,13 @@
                 app.$forceUpdate();
             }
 
+            get intensity() { return devices[this.devicesNames[0]].intensity; }
+            set intensity(value) {
+                for (const deviceName of this.devicesNames)
+                    devices[deviceName].intensity = value;
+                app.$forceUpdate();
+            }
+
             get toggleSpeed() { return devices[this.devicesNames[0]].toggleSpeed; }
             set toggleSpeed(value) {
                 for (const deviceName of this.devicesNames)
@@ -251,12 +304,14 @@
         function sendLoop() {
             window.requestAnimationFrame(sendLoop);
 
-            for (const device of Object.values(devices))
-                device.tick();
+            if (app.mode != 'off') {
+                for (const device of Object.values(devices))
+                    device.tick();
 
-            if (dirty) {
-                dirty = false;
-                ws.send(dmx);
+                if (dirty) {
+                    dirty = false;
+                    ws.send(dmx);
+                }
             }
         }
 
@@ -284,6 +339,11 @@
                     this.mode = 'manual';
                     this.current = this.groups[0];
                     this.current.automatic = false;
+                },
+
+                off() {
+                    this.mode = 'off';
+                    ws.send(new Uint8Array(512));
                 }
             }
         });
