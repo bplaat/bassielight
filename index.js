@@ -112,7 +112,7 @@ class P56LED {
         this.toggle = { red: 0, green: 0, blue: 0 };
         this.intensity = 1;
 
-        this.toggleSpeed = SPEEDS[5];
+        this.toggleSpeed = 0;
         this.toggleTime = Date.now();
         this.isToggle = false;
 
@@ -150,10 +150,7 @@ class P56LED {
             return;
         }
 
-        if (
-            (this.toggle.red != 0 || this.toggle.green != 0 || this.toggle.blue != 0) &&
-            this.isToggle
-        ) {
+        if (this.toggleSpeed != 0 && this.isToggle) {
             dmx[this.addr + CHANNEL_RED] = this.toggle.red * this.intensity;
             dmx[this.addr + CHANNEL_GREEN] = this.toggle.green * this.intensity;
             dmx[this.addr + CHANNEL_BLUE] = this.toggle.blue * this.intensity;
@@ -194,14 +191,16 @@ class RGBWidget {
     onButtonPress(x, y) {
         // Color
         if (y == 0 || y == 1) {
-            for (const fixture of this.fixtures)
-                fixture.color = COLORS[y == 1 ? x + 8 : x];
+            if (COLORS[y == 1 ? x + 8 : x])
+                for (const fixture of this.fixtures)
+                    fixture.color = COLORS[y == 1 ? x + 8 : x];
         }
 
         // Toggle color
         if (y == 2 || y == 3) {
-            for (const fixture of this.fixtures)
-                fixture.toggle = COLORS[y == 3 ? x + 8 : x];
+            if (COLORS[y == 3 ? x + 8 : x])
+                for (const fixture of this.fixtures)
+                    fixture.toggle = COLORS[y == 3 ? x + 8 : x];
         }
 
         // Intensity
@@ -236,8 +235,9 @@ class RGBWidget {
         // Toggle color
         const toggle = this.fixtures[0].toggle;
         for (let i = 0; i < COLORS.length; i++) {
-            launchpad.write(this.x + (i >= 8 ? i - 8 : i), this.y + (i >= 8 ? 3 : 2),
-                toggle.red == COLORS[i].red && toggle.green == COLORS[i].green && toggle.blue == COLORS[i].blue ? 2 : 1);
+            if (COLORS[i])
+                launchpad.write(this.x + (i >= 8 ? i - 8 : i), this.y + (i >= 8 ? 3 : 2),
+                    toggle.red == COLORS[i].red && toggle.green == COLORS[i].green && toggle.blue == COLORS[i].blue ? 2 : 1);
         }
 
         // Toggle speed
@@ -287,6 +287,7 @@ class SwitchWidget {
     onButtonRelease(x, y) {
         for (let i = 0; i < 4; i++) {
             if (x == i * 2 + 1) {
+                this.toggle[i] = false;
                 this.pressed[i] = false;
                 for (const fixture of this.fixtures)
                     fixture.state[i] = false;
@@ -382,18 +383,17 @@ const usbDmx = new UsbDmx();
 await usbDmx.connect();
 usbDmx.onDmx = () => {
     // Draw launchpad
-    for (let i = 0; i < tabs.length; i++)
-        launchpad.write(i, -1, tabs[i] == currentTab ? 2 : 1);
-
     launchpad.write(8, 0, mode == 'everything_off' ? 2 : 1);
     launchpad.write(8, 1, mode == 'automatic' ? 2 : 1);
     launchpad.write(8, 2, mode == 'manual' ? 2 : 1);
 
     if (mode == 'manual') {
+        for (let i = 0; i < tabs.length; i++)
+            launchpad.write(i, -1, tabs[i] == currentTab ? 2 : 1);
         for (const widget of currentTab.widgets)
             widget.draw(launchpad);
     } else {
-        for (let y = 0; y < 8; y++)
+        for (let y = -1; y < 8; y++)
             for (let x = 0; x < 8; x++)
                 launchpad.write(x, y, 0);
     }
