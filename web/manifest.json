@@ -1,6 +1,6 @@
 {
     "name": "BassieLight",
-    "description": "A DMX512 lights controller",
+    "description": "A DMX512 lights controller compatible with the Launchpad Mini",
     "scope": "/",
     "start_url": "/",
     "orientation": "portrait",

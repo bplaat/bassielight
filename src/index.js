@@ -61,6 +61,7 @@ let currentTab = tabs[0];
 
 // Start launchpad
 const launchpad = new LaunchpadMini();
+launchpad.connect();
 launchpad.on('buttonPress', ({ x, y }) => {
     // Mode modes
     if (x === 8) {
@@ -151,7 +152,7 @@ usbDmx.on('dmxRequest', () => {
         return;
     }
 });
-usbDmx.start();
+usbDmx.startSending();
 
 // Start web GUI server
 startServer(launchpad);

@@ -11,19 +11,26 @@ import log from '../log.js';
 export default class LaunchpadMini extends EventEmitter {
     constructor() {
         super();
-
-        this.input = new midi.Input();
-        this._openFirst(this.input);
-        this.input.on('message', (dt, message) => this._onMessage(message));
-
-        this.output = new midi.Output();
-        this._openFirst(this.output);
+        this.connected = false;
         this.buffer = {
             colors: new Uint8Array(9 * 9),
             labels: Array(9 * 9).fill(null),
         };
+    }
 
+    connect() {
+        this.input = new midi.Input();
+        if (!this._openFirst(this.input)) {
+            return false;
+        }
+        this.input.on('message', (dt, message) => this._onMessage(message));
+        this.output = new midi.Output();
+        if (!this._openFirst(this.output)) {
+            return false;
+        }
+        this.connected = true;
         log.info('Connected to the Launchpad Mini');
+        return true;
     }
 
     _openFirst(port) {
@@ -31,10 +38,10 @@ export default class LaunchpadMini extends EventEmitter {
             const portName = port.getPortName(i);
             if (portName.includes('Launchpad Mini')) {
                 port.openPort(i);
-                return;
+                return true;
             }
         }
-        log.error(`Can't connect to the Launchpad Mini`);
+        return false;
     }
 
     _onMessage(message) {
@@ -59,15 +66,12 @@ export default class LaunchpadMini extends EventEmitter {
         this.buffer.colors[bufferOffset] = color;
         this.buffer.labels[bufferOffset] = label;
 
-        let colorByte;
-        if (color === 0) colorByte = (0 << 4) | (0b01 << 2) | 0; // Off
-        if (color === 1) colorByte = (2 << 4) | (0b01 << 2) | 2; // Yellow
-        if (color === 2) colorByte = (0 << 4) | (0b01 << 2) | 2; // Red
-        this.output.sendMessage([y === -1 ? 0xb0 : 0x90, (y === -1 ? 104 : y * 16) + x, colorByte]);
-    }
-
-    close() {
-        this.input.closePort();
-        this.output.closePort();
+        if (this.connected) {
+            let colorByte;
+            if (color === 0) colorByte = (0 << 4) | (0b01 << 2) | 0; // Off
+            if (color === 1) colorByte = (2 << 4) | (0b01 << 2) | 2; // Yellow
+            if (color === 2) colorByte = (0 << 4) | (0b01 << 2) | 2; // Red
+            this.output.sendMessage([y === -1 ? 0xb0 : 0x90, (y === -1 ? 104 : y * 16) + x, colorByte]);
+        }
     }
 }

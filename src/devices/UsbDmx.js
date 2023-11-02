@@ -52,7 +52,7 @@ export default class UsbDmx extends EventEmitter {
         setTimeout(() => this._send(), 22.4);
     }
 
-    start() {
+    startSending() {
         this._send();
     }
 }
