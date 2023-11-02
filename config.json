@@ -20,7 +20,9 @@
             "label": "MultiDim MKII",
             "type": "multidim_mkii",
             "addr": 100,
-            "labels": [ "Strobe left", "Strobe right", null, null ]
+            "options": {
+                "labels": [ "Strobe left", "Strobe right", null, null ]
+            }
         }
     ],
     "tabs": [
