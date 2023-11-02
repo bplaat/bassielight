@@ -18,11 +18,11 @@ export default class P56LED extends Fixture {
         this.intensity = 1;
 
         this.toggleSpeed = 0;
-        this.toggleTime = Date.now();
+        this.toggleTime = performance.now();
         this.isToggle = false;
 
         this.strobeSpeed = 0;
-        this.strobeTime = Date.now();
+        this.strobeTime = performance.now();
         this.isStrobe = false;
     }
 
@@ -36,12 +36,12 @@ export default class P56LED extends Fixture {
         const CHANNEL_GREEN = 1;
         const CHANNEL_BLUE = 2;
 
-        if (Date.now() - this.toggleTime >= this.toggleSpeed) {
-            this.toggleTime = Date.now();
+        if (performance.now() - this.toggleTime >= this.toggleSpeed) {
+            this.toggleTime = performance.now();
             this.isToggle = !this.isToggle;
         }
-        if (Date.now() - this.strobeTime >= this.strobeSpeed) {
-            this.strobeTime = Date.now();
+        if (performance.now() - this.strobeTime >= this.strobeSpeed) {
+            this.strobeTime = performance.now();
             this.isStrobe = !this.isStrobe;
         }
 
