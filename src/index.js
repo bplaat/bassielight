@@ -125,7 +125,8 @@ usbDmx.on('dmxRequest', () => {
     }
 
     // Broadcast new launchpad board
-    broadcast('board', launchpad.buffer);
+    broadcast('board_colors', launchpad.buffer.colors);
+    broadcast('board_labels', launchpad.buffer.labels);
 
     // Tick fixtures and write DMX
     if (mode === 'everything_off') {

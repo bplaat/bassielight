@@ -18,21 +18,25 @@ function connect() {
     };
     ws.onmessage = (event) => {
         const { type, data } = JSON.parse(event.data);
-        if (type === 'board') {
-            const { colors, labels } = data;
+        if (type === 'board_colors') {
             for (let y = -1; y < 8; y++) {
                 for (let x = 0; x < 9; x++) {
                     if (!boardButtons[y + 1][x]) continue;
-
-                    const color = colors[(y + 1) * 9 + x];
+                    const color = data[(y + 1) * 9 + x];
                     boardButtons[y + 1][x].classList.remove('is-black');
                     boardButtons[y + 1][x].classList.remove('is-yellow');
                     boardButtons[y + 1][x].classList.remove('is-red');
                     if (color === 0) boardButtons[y + 1][x].classList.add('is-black');
                     if (color === 1) boardButtons[y + 1][x].classList.add('is-yellow');
                     if (color === 2) boardButtons[y + 1][x].classList.add('is-red');
-
-                    const label = labels[(y + 1) * 9 + x];
+                }
+            }
+        }
+        if (type === 'board_labels') {
+            for (let y = -1; y < 8; y++) {
+                for (let x = 0; x < 9; x++) {
+                    if (!boardButtons[y + 1][x]) continue;
+                    const label = data[(y + 1) * 9 + x];
                     boardButtons[y + 1][x].innerHTML = label !== null ? label.replace(/\n/g, '<br>') : '';
                 }
             }
