@@ -25,6 +25,6 @@ const COLORS = [
     { name: 'White', red: 255, green: 255, blue: 255 },
 ];
 
-const SPEEDS = [0, 1000, 750, 500, 250, 100, 50, 10];
+const SPEEDS = [0, 1000, 750, 500, 250, 100, 50, 22.4];
 
 export { SERVER_PORT, COLORS, SPEEDS };
