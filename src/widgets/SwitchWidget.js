@@ -14,8 +14,8 @@ export default class SwitchWidget extends Widget {
         this.y = y;
         this.width = 8;
         this.height = 1;
-        this.toggle = Array(4).fill(false);
-        this.pressed = Array(4).fill(false);
+        this.toggle = new Array(4).fill(false);
+        this.pressed = new Array(4).fill(false);
         this.on('buttonPress', ({ x, y }) => this._onButtonPress(x, y));
         this.on('buttonRelease', ({ x, y }) => this._onButtonRelease(x, y));
     }

@@ -12,7 +12,7 @@ export default class MultiDimMKII extends Fixture {
         this.type = 'multidim';
         this.name = name;
         this.addr = addr;
-        this.state = Array(4).fill(false);
+        this.state = new Array(4).fill(false);
         if ('labels' in options) {
             this.labels = options.labels;
         }

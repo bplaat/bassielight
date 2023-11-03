@@ -15,7 +15,7 @@ export default class RGBWidget extends Widget {
         this.y = y;
         this.width = 8;
         this.height = 7;
-        this.pressed = Array(4).fill(false);
+        this.pressed = new Array(4).fill(false);
         this.on('buttonPress', ({ x, y }) => this._onButtonPress(x, y));
     }
 

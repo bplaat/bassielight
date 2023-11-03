@@ -112,7 +112,6 @@ usbDmx.on('dmxRequest', () => {
         for (let i = 0; i < tabs.length; i++) {
             launchpad.write(i, -1, tabs[i] === currentTab ? 2 : 1, tabs[i].label);
         }
-
         for (const widget of currentTab.widgets) {
             widget.draw(launchpad);
         }
@@ -124,9 +123,16 @@ usbDmx.on('dmxRequest', () => {
         }
     }
 
-    // Broadcast new launchpad board
-    broadcast('board_colors', launchpad.buffer.colors);
-    broadcast('board_labels', launchpad.buffer.labels);
+    // Sync and broadcast launchpad changes
+    if (launchpad.colors.dirty) {
+        launchpad.colors.dirty = false;
+        launchpad.syncColors();
+        broadcast('board_colors', launchpad.colors.buffer);
+    }
+    if (launchpad.labels.dirty) {
+        launchpad.labels.dirty = false;
+        broadcast('board_labels', launchpad.labels.buffer);
+    }
 
     // Tick fixtures and write DMX
     if (mode === 'everything_off') {

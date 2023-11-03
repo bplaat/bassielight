@@ -12,10 +12,8 @@ export default class LaunchpadMini extends EventEmitter {
     constructor() {
         super();
         this.connected = false;
-        this.buffer = {
-            colors: new Uint8Array(9 * 9),
-            labels: Array(9 * 9).fill(null),
-        };
+        this.colors = { buffer: new Uint8Array(9 * 9), dirty: false };
+        this.labels = { buffer: new Array(9 * 9).fill(null), dirty: false };
     }
 
     connect() {
@@ -63,15 +61,23 @@ export default class LaunchpadMini extends EventEmitter {
 
     write(x, y, color, label = null) {
         const bufferOffset = (y + 1) * 9 + x;
-        this.buffer.colors[bufferOffset] = color;
-        this.buffer.labels[bufferOffset] = label;
+        if (this.colors.buffer[bufferOffset] !== color) this.colors.dirty = true;
+        this.colors.buffer[bufferOffset] = color;
+        if (this.labels.buffer[bufferOffset] !== label) this.labels.dirty = true;
+        this.labels.buffer[bufferOffset] = label;
+    }
 
-        if (this.connected) {
-            let colorByte;
-            if (color === 0) colorByte = (0 << 4) | (0b01 << 2) | 0; // Off
-            if (color === 1) colorByte = (2 << 4) | (0b01 << 2) | 2; // Yellow
-            if (color === 2) colorByte = (0 << 4) | (0b01 << 2) | 2; // Red
-            this.output.sendMessage([y === -1 ? 0xb0 : 0x90, (y === -1 ? 104 : y * 16) + x, colorByte]);
+    syncColors() {
+        if (!this.connected) return;
+        for (let y = -1; y < 8; y++) {
+            for (let x = 0; x < 9; x++) {
+                const color = this.colors.buffer[(y + 1) * 9 + x];
+                let colorByte;
+                if (color === 0) colorByte = (0 << 4) | (0b01 << 2) | 0; // Off
+                if (color === 1) colorByte = (2 << 4) | (0b01 << 2) | 2; // Yellow
+                if (color === 2) colorByte = (0 << 4) | (0b01 << 2) | 2; // Red
+                this.output.sendMessage([y === -1 ? 0xb0 : 0x90, (y === -1 ? 104 : y * 16) + x, colorByte]);
+            }
         }
     }
 }

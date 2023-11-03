@@ -33,6 +33,8 @@ export function broadcast(type, data) {
 export function startServer(launchpad) {
     const wss = new WebSocketServer({ noServer: true });
     wss.on('connection', function (ws) {
+        launchpad.colors.dirty = true;
+        launchpad.labels.dirty = true;
         clients.push(ws);
         ws.on('message', (message) => {
             const { type, data } = JSON.parse(message);
