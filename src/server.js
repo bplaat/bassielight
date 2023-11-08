@@ -7,7 +7,7 @@
 import { readFile } from 'fs/promises';
 import { createServer } from 'http';
 import { WebSocketServer } from 'ws';
-import { SERVER_PORT } from './consts.js';
+import { SERVER_PORT, MessageType } from './consts.js';
 import open from './open.js';
 import log from './log.js';
 
@@ -24,9 +24,9 @@ function mime(filePath) {
 }
 
 let clients = [];
-export function broadcast(type, data) {
+export function broadcast(message) {
     for (const client of clients) {
-        client.send(JSON.stringify({ type, data }));
+        client.send(message);
     }
 }
 
@@ -37,12 +37,20 @@ export function startServer(launchpad) {
         launchpad.labels.dirty = true;
         clients.push(ws);
         ws.on('message', (message) => {
-            const { type, data } = JSON.parse(message);
-            if (type === 'button_press') {
-                launchpad.emit('buttonPress', { x: data.x, y: data.y });
+            let pos = 0;
+            const view = new DataView(message);
+            const type = view.getUint8(pos++);
+
+            if (type === MessageType.BUTTON_PRESS) {
+                const x = view.getInt8(pos++);
+                const y = view.getInt8(pos++);
+                launchpad.emit('buttonPress', { x, y });
             }
-            if (type === 'button_release') {
-                launchpad.emit('buttonRelease', { x: data.x, y: data.y });
+
+            if (type === MessageType.BUTTON_RELEASE) {
+                const x = view.getInt8(pos++);
+                const y = view.getInt8(pos++);
+                launchpad.emit('buttonRelease', { x, y });
             }
         });
         ws.on('error', log.error);

@@ -13,6 +13,7 @@ import RGBWidget from './widgets/RGBWidget.js';
 import SwitchWidget from './widgets/SwitchWidget.js';
 import log from './log.js';
 import { startServer, broadcast } from './server.js';
+import { MessageType } from './consts.js';
 
 function createSetup(config) {
     // Create fixtures from config
@@ -127,11 +128,38 @@ usbDmx.on('dmxRequest', () => {
     if (launchpad.colors.dirty) {
         launchpad.colors.dirty = false;
         launchpad.syncColors();
-        broadcast('board_colors', launchpad.colors.buffer);
+
+        // Send board colors message
+        const message = new ArrayBuffer(1 + 9 * 9);
+        let pos = 0;
+        const view = new DataView(message);
+        view.setUint8(pos++, MessageType.BOARD_COLORS);
+        for (let i = 0; i < launchpad.colors.buffer.length; i++) {
+            view.setUint8(pos++, launchpad.colors.buffer[i]);
+        }
+        broadcast(message);
     }
+
     if (launchpad.labels.dirty) {
         launchpad.labels.dirty = false;
-        broadcast('board_labels', launchpad.labels.buffer);
+
+        // Send board labels message
+        let messageLength = 1;
+        for (let i = 0; i < launchpad.labels.buffer.length; i++) {
+            messageLength += 2 + launchpad.labels.buffer[i].length;
+        }
+        const message = new ArrayBuffer(messageLength);
+        let pos = 0;
+        const view = new DataView(message);
+        view.setUint8(pos++, MessageType.BOARD_LABELS);
+        for (let i = 0; i < launchpad.labels.buffer.length; i++) {
+            const label = launchpad.labels.buffer[i];
+            view.setUint16(pos, label.length, true); pos += 2;
+            for (let j = 0; j < label.length; j++) {
+                view.setUint8(pos++, label.charCodeAt(j));
+            }
+        }
+        broadcast(message);
     }
 
     // Tick fixtures and write DMX

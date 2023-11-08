@@ -6,6 +6,13 @@
 
 const SERVER_PORT = 8080;
 
+const MessageType = {
+    BOARD_COLORS: 0x00,
+    BOARD_LABELS: 0x01,
+    BUTTON_PRESS: 0x10,
+    BUTTON_RELEASE: 0x11,
+};
+
 const COLORS = [
     { name: 'Off', red: 0, green: 0, blue: 0 },
     { name: 'Blue', red: 0, green: 0, blue: 170 },
@@ -27,4 +34,4 @@ const COLORS = [
 
 const SPEEDS = [0, 1000, 750, 500, 250, 100, 50, 22.4];
 
-export { SERVER_PORT, COLORS, SPEEDS };
+export { SERVER_PORT, MessageType, COLORS, SPEEDS };

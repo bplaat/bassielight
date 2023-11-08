@@ -127,6 +127,7 @@ a:focus {
     border: 2px solid rgba(0, 0, 0, 0.2);
     transition: 0.1s background-color ease-in-out;
     cursor: pointer;
+    white-space: pre;
 }
 .button.is-round {
     border-radius: 50%;

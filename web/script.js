@@ -4,25 +4,40 @@
  * SPDX-License-Identifier: MIT
  */
 
+function rand(min, max) {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
 const openPage = document.getElementById('open-page');
 const boardPage = document.getElementById('board-page');
 const boardContainer = document.getElementById('board-container');
 let boardButtons = [];
 
+const MessageType = {
+    BOARD_COLORS: 0x00,
+    BOARD_LABELS: 0x01,
+    BUTTON_PRESS: 0x10,
+    BUTTON_RELEASE: 0x11,
+};
+
 let ws;
 function connect() {
     ws = new WebSocket(`ws://${location.host}/ws`);
+    ws.binaryType = 'arraybuffer';
     ws.onopen = () => {
         openPage.classList.add('is-hidden');
         boardPage.classList.remove('is-hidden');
     };
     ws.onmessage = (event) => {
-        const { type, data } = JSON.parse(event.data);
-        if (type === 'board_colors') {
+        let pos = 0;
+        const view = new DataView(event.data);
+        const type = view.getUint8(pos++);
+
+        if (type === MessageType.BOARD_COLORS) {
             for (let y = -1; y < 8; y++) {
                 for (let x = 0; x < 9; x++) {
+                    const color = view.getUint8(pos++);
                     if (!boardButtons[y + 1][x]) continue;
-                    const color = data[(y + 1) * 9 + x];
                     boardButtons[y + 1][x].classList.remove('is-black');
                     boardButtons[y + 1][x].classList.remove('is-yellow');
                     boardButtons[y + 1][x].classList.remove('is-red');
@@ -32,20 +47,19 @@ function connect() {
                 }
             }
         }
-        if (type === 'board_labels') {
+
+        if (type === MessageType.BOARD_LABELS) {
+            const decoder = new TextDecoder();
             for (let y = -1; y < 8; y++) {
                 for (let x = 0; x < 9; x++) {
+                    const labelLength = view.getUint16(pos, true); pos += 2;
+                    const label = decoder.decode(new Uint8Array(event.data, pos, labelLength)); pos += labelLength;
                     if (!boardButtons[y + 1][x]) continue;
-                    const label = data[(y + 1) * 9 + x];
-                    boardButtons[y + 1][x].innerHTML = label !== null ? label.replace(/\n/g, '<br>') : '';
+                    boardButtons[y + 1][x].textContent = label;
                 }
             }
         }
     };
-}
-
-function send(type, data) {
-    ws.send(JSON.stringify({ type, data }));
 }
 
 const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
@@ -75,18 +89,22 @@ function createBoard() {
             column.setAttribute('data-x', x);
             column.setAttribute('data-y', y);
             column.addEventListener('mousedown', (event) => {
-                const target = event.target;
-                send('button_press', {
-                    x: parseInt(target.getAttribute('data-x')),
-                    y: parseInt(target.getAttribute('data-y')),
-                });
+                const message = new ArrayBuffer(1 + 1 + 1);
+                let pos = 0;
+                const view = new DataView(message);
+                view.setUint8(pos++, MessageType.BUTTON_PRESS);
+                view.setInt8(pos++, parseInt(event.target.getAttribute('data-x')));
+                view.setInt8(pos++, parseInt(event.target.getAttribute('data-y')));
+                ws.send(message);
             });
             column.addEventListener('mouseup', (event) => {
-                const target = event.target;
-                send('button_release', {
-                    x: parseInt(target.getAttribute('data-x')),
-                    y: parseInt(target.getAttribute('data-y')),
-                });
+                const message = new ArrayBuffer(1 + 1 + 1);
+                let pos = 0;
+                const view = new DataView(message);
+                view.setUint8(pos++, MessageType.BUTTON_RELEASE);
+                view.setInt8(pos++, parseInt(event.target.getAttribute('data-x')));
+                view.setInt8(pos++, parseInt(event.target.getAttribute('data-y')));
+                ws.send(message);
             });
             row.appendChild(column);
             boardRow.push(column);
@@ -102,4 +120,4 @@ function createBoard() {
 }
 
 createBoard();
-setTimeout(connect, 750);
+setTimeout(connect, rand(500, 750));
