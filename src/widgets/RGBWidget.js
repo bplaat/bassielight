@@ -17,6 +17,8 @@ export default class RGBWidget extends Widget {
         this.height = 7;
         this.pressed = new Array(4).fill(false);
         this.on('buttonPress', ({ x, y }) => this._onButtonPress(x, y));
+        this.on('toggle', () => this._onToggle());
+        this.on('strobe', () => this._onStrobe());
     }
 
     _onButtonPress(x, y) {
@@ -56,6 +58,22 @@ export default class RGBWidget extends Widget {
         if (y === 6) {
             for (const fixture of this.fixtures) {
                 fixture.strobeSpeed = SPEEDS[x];
+            }
+        }
+    }
+
+    _onToggle() {
+        for (const fixture of this.fixtures) {
+            if (fixture.type === 'rgb') {
+                fixture.toggle();
+            }
+        }
+    }
+
+    _onStrobe() {
+        for (const fixture of this.fixtures) {
+            if (fixture.type === 'rgb') {
+                fixture.strobe();
             }
         }
     }

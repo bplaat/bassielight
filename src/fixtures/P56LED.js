@@ -26,36 +26,41 @@ export default class P56LED extends Fixture {
         this.isStrobe = false;
     }
 
+    toggle() {
+        this.isToggle = !this.isToggle;
+    }
+
+    strobe() {
+        this.isStrobe = !this.isStrobe;
+    }
+
     automatic(dmx) {
         const CHANNEL_MODE = 5;
         dmx[this.addr + CHANNEL_MODE] = 255;
     }
 
-    tick(dmx) {
+    update(dmx) {
         const CHANNEL_RED = 0;
         const CHANNEL_GREEN = 1;
         const CHANNEL_BLUE = 2;
 
         if (performance.now() - this.toggleTime >= this.toggleSpeed) {
             this.toggleTime = performance.now();
-            this.isToggle = !this.isToggle;
+            if (this.toggleSpeed !== 0) this.toggle();
         }
         if (performance.now() - this.strobeTime >= this.strobeSpeed) {
             this.strobeTime = performance.now();
-            this.isStrobe = !this.isStrobe;
+            if (this.strobeSpeed !== 0) this.strobe();
         }
 
-        if (
-            (this.color.red === 0 && this.color.green === 0 && this.color.blue === 0) ||
-            (this.strobeSpeed !== 0 && this.isStrobe)
-        ) {
+        if ((this.color.red === 0 && this.color.green === 0 && this.color.blue === 0) || this.isStrobe) {
             dmx[this.addr + CHANNEL_RED] = 0;
             dmx[this.addr + CHANNEL_GREEN] = 0;
             dmx[this.addr + CHANNEL_BLUE] = 0;
             return;
         }
 
-        if (this.toggleSpeed !== 0 && this.isToggle) {
+        if (this.isToggle) {
             dmx[this.addr + CHANNEL_RED] = this.toggle.red * this.intensity;
             dmx[this.addr + CHANNEL_GREEN] = this.toggle.green * this.intensity;
             dmx[this.addr + CHANNEL_BLUE] = this.toggle.blue * this.intensity;

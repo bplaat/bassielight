@@ -59,6 +59,8 @@ const { fixtures, tabs } = createSetup(config);
 const dmx = new Uint8Array(512);
 let mode = 'everything_off';
 let currentTab = tabs[0];
+let toggleButtonDown = false;
+let strobeButtonDown = false;
 
 // Start launchpad
 const launchpad = new LaunchpadMini();
@@ -85,6 +87,22 @@ launchpad.on('buttonPress', ({ x, y }) => {
                 widget.emit('buttonPress', { x: x - widget.x, y: y - widget.y });
             }
         }
+
+        // Toggle & strobe buttons
+        if (x === 8) {
+            if (y === 7) {
+                toggleButtonDown = true;
+                for (const widget of currentTab.widgets) {
+                    widget.emit('toggle');
+                }
+            }
+            if (y === 8) {
+                strobeButtonDown = true;
+                for (const widget of currentTab.widgets) {
+                    widget.emit('strobe');
+                }
+            }
+        }
     }
 });
 launchpad.on('buttonRelease', ({ x, y }) => {
@@ -94,6 +112,12 @@ launchpad.on('buttonRelease', ({ x, y }) => {
             if (x >= widget.x && y >= widget.y && x < widget.x + widget.width && y < widget.y + widget.height) {
                 widget.emit('buttonRelease', { x: x - widget.x, y: y - widget.y });
             }
+        }
+
+        // Toggle & strobe buttons
+        if (x === 8) {
+            if (y === 7) toggleButtonDown = false;
+            if (y === 8) strobeButtonDown = false;
         }
     }
 });
@@ -116,6 +140,8 @@ usbDmx.on('dmxRequest', () => {
         for (const widget of currentTab.widgets) {
             widget.draw(launchpad);
         }
+        launchpad.write(8, 7, toggleButtonDown ? 2 : 1);
+        launchpad.write(8, 8, strobeButtonDown ? 2 : 1);
     } else {
         for (let y = -1; y < 8; y++) {
             for (let x = 0; x < 8; x++) {
@@ -162,7 +188,7 @@ usbDmx.on('dmxRequest', () => {
         broadcast(message);
     }
 
-    // Tick fixtures and write DMX
+    // Update fixtures and write DMX
     if (mode === 'everything_off') {
         usbDmx.dmx = new Uint8Array(512);
         return;
@@ -181,7 +207,7 @@ usbDmx.on('dmxRequest', () => {
 
     if (mode === 'manual') {
         for (const fixture of fixtures) {
-            fixture.tick(dmx);
+            fixture.update(dmx);
         }
         usbDmx.dmx = dmx;
         return;

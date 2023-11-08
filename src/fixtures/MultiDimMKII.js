@@ -18,7 +18,7 @@ export default class MultiDimMKII extends Fixture {
         }
     }
 
-    tick(dmx) {
+    update(dmx) {
         dmx[this.addr + 0] = this.state[0] ? 255 : 0;
         dmx[this.addr + 1] = this.state[1] ? 255 : 0;
         dmx[this.addr + 2] = this.state[2] ? 255 : 0;
