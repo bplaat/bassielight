@@ -37,8 +37,10 @@ export function startServer(launchpad) {
         launchpad.labels.dirty = true;
         clients.push(ws);
         ws.on('message', (message) => {
+            const data = new Uint8Array(message.byteLength);
+            message.copy(data, 0);
+            const view = new DataView(data.buffer);
             let pos = 0;
-            const view = new DataView(message);
             const type = view.getUint8(pos++);
 
             if (type === MessageType.BUTTON_PRESS) {

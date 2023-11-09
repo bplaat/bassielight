@@ -90,8 +90,8 @@ function createBoard() {
             column.setAttribute('data-y', y);
             column.addEventListener('mousedown', (event) => {
                 const message = new ArrayBuffer(1 + 1 + 1);
-                let pos = 0;
                 const view = new DataView(message);
+                let pos = 0;
                 view.setUint8(pos++, MessageType.BUTTON_PRESS);
                 view.setInt8(pos++, parseInt(event.target.getAttribute('data-x')));
                 view.setInt8(pos++, parseInt(event.target.getAttribute('data-y')));
@@ -99,8 +99,8 @@ function createBoard() {
             });
             column.addEventListener('mouseup', (event) => {
                 const message = new ArrayBuffer(1 + 1 + 1);
-                let pos = 0;
                 const view = new DataView(message);
+                let pos = 0;
                 view.setUint8(pos++, MessageType.BUTTON_RELEASE);
                 view.setInt8(pos++, parseInt(event.target.getAttribute('data-x')));
                 view.setInt8(pos++, parseInt(event.target.getAttribute('data-y')));

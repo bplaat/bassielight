@@ -157,8 +157,8 @@ usbDmx.on('dmxRequest', () => {
 
         // Send board colors message
         const message = new ArrayBuffer(1 + 9 * 9);
-        let pos = 0;
         const view = new DataView(message);
+        let pos = 0;
         view.setUint8(pos++, MessageType.BOARD_COLORS);
         for (let i = 0; i < launchpad.colors.buffer.length; i++) {
             view.setUint8(pos++, launchpad.colors.buffer[i]);
@@ -175,8 +175,8 @@ usbDmx.on('dmxRequest', () => {
             messageLength += 2 + launchpad.labels.buffer[i].length;
         }
         const message = new ArrayBuffer(messageLength);
-        let pos = 0;
         const view = new DataView(message);
+        let pos = 0;
         view.setUint8(pos++, MessageType.BOARD_LABELS);
         for (let i = 0; i < launchpad.labels.buffer.length; i++) {
             const label = launchpad.labels.buffer[i];
