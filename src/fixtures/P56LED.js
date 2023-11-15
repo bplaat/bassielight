@@ -14,7 +14,7 @@ export default class P56LED extends Fixture {
         this.addr = addr;
 
         this.color = { red: 0, green: 0, blue: 0 };
-        this.toggle = { red: 0, green: 0, blue: 0 };
+        this.toggleColor = { red: 0, green: 0, blue: 0 };
         this.intensity = 1;
 
         this.toggleSpeed = 0;
@@ -61,9 +61,9 @@ export default class P56LED extends Fixture {
         }
 
         if (this.isToggle) {
-            dmx[this.addr + CHANNEL_RED] = this.toggle.red * this.intensity;
-            dmx[this.addr + CHANNEL_GREEN] = this.toggle.green * this.intensity;
-            dmx[this.addr + CHANNEL_BLUE] = this.toggle.blue * this.intensity;
+            dmx[this.addr + CHANNEL_RED] = this.toggleColor.red * this.intensity;
+            dmx[this.addr + CHANNEL_GREEN] = this.toggleColor.green * this.intensity;
+            dmx[this.addr + CHANNEL_BLUE] = this.toggleColor.blue * this.intensity;
         } else {
             dmx[this.addr + CHANNEL_RED] = this.color.red * this.intensity;
             dmx[this.addr + CHANNEL_GREEN] = this.color.green * this.intensity;

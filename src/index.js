@@ -71,14 +71,12 @@ launchpad.on('buttonPress', ({ x, y }) => {
         if (y === 0) mode = 'everything_off';
         if (y === 1) mode = 'automatic';
         if (y === 2) mode = 'manual';
-        return;
     }
 
     if (mode === 'manual') {
         // Tabs selector
         if (y === -1 && x < tabs.length) {
             currentTab = tabs[x];
-            return;
         }
 
         // Current tab widgets
@@ -90,13 +88,13 @@ launchpad.on('buttonPress', ({ x, y }) => {
 
         // Toggle & strobe buttons
         if (x === 8) {
-            if (y === 7) {
+            if (y === 6) {
                 toggleButtonDown = true;
                 for (const widget of currentTab.widgets) {
                     widget.emit('toggle');
                 }
             }
-            if (y === 8) {
+            if (y === 7) {
                 strobeButtonDown = true;
                 for (const widget of currentTab.widgets) {
                     widget.emit('strobe');
@@ -116,8 +114,8 @@ launchpad.on('buttonRelease', ({ x, y }) => {
 
         // Toggle & strobe buttons
         if (x === 8) {
-            if (y === 7) toggleButtonDown = false;
-            if (y === 8) strobeButtonDown = false;
+            if (y === 6) toggleButtonDown = false;
+            if (y === 7) strobeButtonDown = false;
         }
     }
 });
@@ -140,8 +138,8 @@ usbDmx.on('dmxRequest', () => {
         for (const widget of currentTab.widgets) {
             widget.draw(launchpad);
         }
-        launchpad.write(8, 7, toggleButtonDown ? 2 : 1);
-        launchpad.write(8, 8, strobeButtonDown ? 2 : 1);
+        launchpad.write(8, 6, toggleButtonDown ? 2 : 1);
+        launchpad.write(8, 7, strobeButtonDown ? 2 : 1);
     } else {
         for (let y = -1; y < 8; y++) {
             for (let x = 0; x < 8; x++) {
@@ -172,7 +170,11 @@ usbDmx.on('dmxRequest', () => {
         // Send board labels message
         let messageLength = 1;
         for (let i = 0; i < launchpad.labels.buffer.length; i++) {
-            messageLength += 2 + launchpad.labels.buffer[i].length;
+            if (launchpad.labels.buffer[i] === null) {
+                messageLength += 2;
+            } else {
+                messageLength += 2 + launchpad.labels.buffer[i].length;
+            }
         }
         const message = new ArrayBuffer(messageLength);
         const view = new DataView(message);
@@ -180,9 +182,13 @@ usbDmx.on('dmxRequest', () => {
         view.setUint8(pos++, MessageType.BOARD_LABELS);
         for (let i = 0; i < launchpad.labels.buffer.length; i++) {
             const label = launchpad.labels.buffer[i];
-            view.setUint16(pos, label.length, true); pos += 2;
-            for (let j = 0; j < label.length; j++) {
-                view.setUint8(pos++, label.charCodeAt(j));
+            if (label === null) {
+                view.setUint16(pos, 0, true); pos += 2;
+            } else {
+                view.setUint16(pos, label.length, true); pos += 2;
+                for (let j = 0; j < label.length; j++) {
+                    view.setUint8(pos++, label.charCodeAt(j));
+                }
             }
         }
         broadcast(message);

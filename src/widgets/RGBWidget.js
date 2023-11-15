@@ -35,7 +35,7 @@ export default class RGBWidget extends Widget {
         if (y === 2 || y === 3) {
             if (COLORS[y === 3 ? x + 8 : x]) {
                 for (const fixture of this.fixtures) {
-                    fixture.toggle = COLORS[y === 3 ? x + 8 : x];
+                    fixture.toggleColor = COLORS[y === 3 ? x + 8 : x];
                 }
             }
         }
@@ -50,6 +50,7 @@ export default class RGBWidget extends Widget {
         // Toggle speed
         if (y === 5) {
             for (const fixture of this.fixtures) {
+                if (SPEEDS[x] === 0) fixture.isToggle = false;
                 fixture.toggleSpeed = SPEEDS[x];
             }
         }
@@ -57,6 +58,7 @@ export default class RGBWidget extends Widget {
         // Strobe speed
         if (y === 6) {
             for (const fixture of this.fixtures) {
+                if (SPEEDS[x] === 0) fixture.isStrobe = false;
                 fixture.strobeSpeed = SPEEDS[x];
             }
         }
@@ -95,16 +97,16 @@ export default class RGBWidget extends Widget {
         }
 
         // Toggle color
-        const toggle = this.fixtures[0].toggle;
+        const toggleColor = this.fixtures[0].toggle;
         for (let i = 0; i < COLORS.length; i++) {
             if (COLORS[i]) {
                 launchpad.write(
                     this.x + (i >= 8 ? i - 8 : i),
                     this.y + (i >= 8 ? 3 : 2),
-                    toggle.red === COLORS[i].red && toggle.green === COLORS[i].green && toggle.blue === COLORS[i].blue
+                    toggleColor.red === COLORS[i].red && toggleColor.green === COLORS[i].green && toggleColor.blue === COLORS[i].blue
                         ? 2
                         : 1,
-                    `Toggle\n${COLORS[i].name}`
+                    `Toggle color\n${COLORS[i].name}`
                 );
             }
         }
