@@ -97,7 +97,7 @@ export default class RGBWidget extends Widget {
         }
 
         // Toggle color
-        const toggleColor = this.fixtures[0].toggle;
+        const toggleColor = this.fixtures[0].toggleColor;
         for (let i = 0; i < COLORS.length; i++) {
             if (COLORS[i]) {
                 launchpad.write(
